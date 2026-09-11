@@ -1,0 +1,13 @@
+{
+  "name": "metricmind-backend",
+  "version": "1.0.0",
+  "description": "MetricMind Backend Semantic Layer & Governance Engine",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test:semantic": "node src/testSemanticEngine.js"
+  },
+  "dependencies": {
+    "sqlite3": "^5.1.7"
+  }
+}
