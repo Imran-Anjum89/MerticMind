@@ -91,7 +91,7 @@ export default function AnalysisCard({ explanation, scenario }) {
             letterSpacing: '0.6px',
             marginBottom:  '10px'
           }}>
-            {isGovernance ? '🔒 Governance Rules Applied' : '🔍 Root Cause Attribution'}
+            {isGovernance ? 'Governance Rules Applied' : 'Root Cause Attribution'}
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '10px' }}>
             {explanation.rootCauses.map((rc, idx) => {
