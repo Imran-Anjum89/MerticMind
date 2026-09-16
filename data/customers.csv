@@ -1,0 +1,121 @@
+customer_id,customer_name,country,region
+C001,DE Business Customer 01,Germany,Europe
+C002,FR Business Customer 02,France,Europe
+C003,UK Business Customer 03,United Kingdom,Europe
+C004,NL Business Customer 04,Netherlands,Europe
+C005,DE Business Customer 05,Germany,Europe
+C006,FR Business Customer 06,France,Europe
+C007,UK Business Customer 07,United Kingdom,Europe
+C008,NL Business Customer 08,Netherlands,Europe
+C009,DE Business Customer 09,Germany,Europe
+C010,FR Business Customer 10,France,Europe
+C011,UK Business Customer 11,United Kingdom,Europe
+C012,NL Business Customer 12,Netherlands,Europe
+C013,DE Business Customer 13,Germany,Europe
+C014,FR Business Customer 14,France,Europe
+C015,UK Business Customer 15,United Kingdom,Europe
+C016,NL Business Customer 16,Netherlands,Europe
+C017,DE Business Customer 17,Germany,Europe
+C018,FR Business Customer 18,France,Europe
+C019,UK Business Customer 19,United Kingdom,Europe
+C020,NL Business Customer 20,Netherlands,Europe
+C021,DE Business Customer 21,Germany,Europe
+C022,FR Business Customer 22,France,Europe
+C023,UK Business Customer 23,United Kingdom,Europe
+C024,NL Business Customer 24,Netherlands,Europe
+C025,DE Business Customer 25,Germany,Europe
+C026,FR Business Customer 26,France,Europe
+C027,UK Business Customer 27,United Kingdom,Europe
+C028,NL Business Customer 28,Netherlands,Europe
+C029,DE Business Customer 29,Germany,Europe
+C030,FR Business Customer 30,France,Europe
+C031,US Business Customer 01,United States,North America
+C032,CA Business Customer 02,Canada,North America
+C033,MX Business Customer 03,Mexico,North America
+C034,US Business Customer 04,United States,North America
+C035,CA Business Customer 05,Canada,North America
+C036,MX Business Customer 06,Mexico,North America
+C037,US Business Customer 07,United States,North America
+C038,CA Business Customer 08,Canada,North America
+C039,MX Business Customer 09,Mexico,North America
+C040,US Business Customer 10,United States,North America
+C041,CA Business Customer 11,Canada,North America
+C042,MX Business Customer 12,Mexico,North America
+C043,US Business Customer 13,United States,North America
+C044,CA Business Customer 14,Canada,North America
+C045,MX Business Customer 15,Mexico,North America
+C046,US Business Customer 16,United States,North America
+C047,CA Business Customer 17,Canada,North America
+C048,MX Business Customer 18,Mexico,North America
+C049,US Business Customer 19,United States,North America
+C050,CA Business Customer 20,Canada,North America
+C051,MX Business Customer 21,Mexico,North America
+C052,US Business Customer 22,United States,North America
+C053,CA Business Customer 23,Canada,North America
+C054,MX Business Customer 24,Mexico,North America
+C055,US Business Customer 25,United States,North America
+C056,CA Business Customer 26,Canada,North America
+C057,MX Business Customer 27,Mexico,North America
+C058,US Business Customer 28,United States,North America
+C059,CA Business Customer 29,Canada,North America
+C060,MX Business Customer 30,Mexico,North America
+C061,IN Business Customer 01,India,India
+C062,IN Business Customer 02,India,India
+C063,IN Business Customer 03,India,India
+C064,IN Business Customer 04,India,India
+C065,IN Business Customer 05,India,India
+C066,IN Business Customer 06,India,India
+C067,IN Business Customer 07,India,India
+C068,IN Business Customer 08,India,India
+C069,IN Business Customer 09,India,India
+C070,IN Business Customer 10,India,India
+C071,IN Business Customer 11,India,India
+C072,IN Business Customer 12,India,India
+C073,IN Business Customer 13,India,India
+C074,IN Business Customer 14,India,India
+C075,IN Business Customer 15,India,India
+C076,IN Business Customer 16,India,India
+C077,IN Business Customer 17,India,India
+C078,IN Business Customer 18,India,India
+C079,IN Business Customer 19,India,India
+C080,IN Business Customer 20,India,India
+C081,IN Business Customer 21,India,India
+C082,IN Business Customer 22,India,India
+C083,IN Business Customer 23,India,India
+C084,IN Business Customer 24,India,India
+C085,IN Business Customer 25,India,India
+C086,IN Business Customer 26,India,India
+C087,IN Business Customer 27,India,India
+C088,IN Business Customer 28,India,India
+C089,IN Business Customer 29,India,India
+C090,IN Business Customer 30,India,India
+C091,JP Business Customer 01,Japan,Japan
+C092,JP Business Customer 02,Japan,Japan
+C093,JP Business Customer 03,Japan,Japan
+C094,JP Business Customer 04,Japan,Japan
+C095,JP Business Customer 05,Japan,Japan
+C096,JP Business Customer 06,Japan,Japan
+C097,JP Business Customer 07,Japan,Japan
+C098,JP Business Customer 08,Japan,Japan
+C099,JP Business Customer 09,Japan,Japan
+C100,JP Business Customer 10,Japan,Japan
+C101,JP Business Customer 11,Japan,Japan
+C102,JP Business Customer 12,Japan,Japan
+C103,JP Business Customer 13,Japan,Japan
+C104,JP Business Customer 14,Japan,Japan
+C105,JP Business Customer 15,Japan,Japan
+C106,JP Business Customer 16,Japan,Japan
+C107,JP Business Customer 17,Japan,Japan
+C108,JP Business Customer 18,Japan,Japan
+C109,JP Business Customer 19,Japan,Japan
+C110,JP Business Customer 20,Japan,Japan
+C111,JP Business Customer 21,Japan,Japan
+C112,JP Business Customer 22,Japan,Japan
+C113,JP Business Customer 23,Japan,Japan
+C114,JP Business Customer 24,Japan,Japan
+C115,JP Business Customer 25,Japan,Japan
+C116,JP Business Customer 26,Japan,Japan
+C117,JP Business Customer 27,Japan,Japan
+C118,JP Business Customer 28,Japan,Japan
+C119,JP Business Customer 29,Japan,Japan
+C120,JP Business Customer 30,Japan,Japan

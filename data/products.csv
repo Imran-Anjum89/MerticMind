@@ -1,0 +1,31 @@
+product_id,product_name,product_category
+P001,Industrial Controller,Electronics
+P002,Precision Sensor,Electronics
+P003,Automation Module,Industrial Equipment
+P004,Power Supply Unit,Electrical
+P005,Control Panel,Industrial Equipment
+P006,Motor Assembly,Mechanical
+P007,PLC Gateway,Automation
+P008,Temperature Sensor,Electronics
+P009,Servo Drive,Mechanical
+P010,Industrial Router,Networking
+P011,Safety Relay,Electrical
+P012,Robotic Gripper,Robotics
+P013,Vision Camera,Robotics
+P014,Conveyor Module,Industrial Equipment
+P015,Power Converter,Electrical
+P016,Motion Controller,Automation
+P017,Pressure Sensor,Electronics
+P018,Hydraulic Pump,Mechanical
+P019,Edge Computing Unit,Computing
+P020,Industrial Display,Electronics
+P021,Barcode Scanner,Automation
+P022,Machine Interface,Industrial Equipment
+P023,Energy Meter,Electrical
+P024,Bearing Assembly,Mechanical
+P025,AI Inspection Unit,AI Equipment
+P026,Wireless Gateway,Networking
+P027,Cooling Module,Mechanical
+P028,Digital Power Meter,Electrical
+P029,Robot Controller,Robotics
+P030,Industrial Tablet,Computing
