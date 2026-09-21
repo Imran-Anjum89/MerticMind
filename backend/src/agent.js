@@ -75,7 +75,6 @@ function detectMeasures(question) {
     measures.push(MEASURES.materialcost);
   }
 
-  // Default metric for general business questions.
   if (measures.length === 0) {
     measures.push(MEASURES.revenue);
   }
@@ -136,7 +135,6 @@ function buildCubeQuery(question) {
     limit: 1000,
   };
 
-  // Region filter
   if (region) {
     query.filters.push({
       member: DIMENSIONS.region,
@@ -145,7 +143,6 @@ function buildCubeQuery(question) {
     });
   }
 
-  // Trend analysis
   if (isTrendQuestion(question)) {
     query.timeDimensions.push({
       dimension: DIMENSIONS.date,
@@ -153,7 +150,6 @@ function buildCubeQuery(question) {
     });
   }
 
-  // Breakdown analysis
   if (isBreakdownQuestion(question)) {
     if (question.toLowerCase().includes("country")) {
       query.dimensions.push(DIMENSIONS.country);
@@ -175,12 +171,6 @@ function buildCubeQuery(question) {
  *
  * Example:
  * "Why did European margins drop last quarter?"
- *
- * Step 1:
- * Investigate margin trend.
- *
- * Step 2:
- * Investigate shipping and material costs.
  */
 function requiresRootCauseAnalysis(question) {
   const normalized = question.toLowerCase();
@@ -200,6 +190,7 @@ function requiresRootCauseAnalysis(question) {
  */
 function createAnalysisPlan(question) {
   const region = detectRegion(question);
+  const normalized = question.toLowerCase();
 
   if (!requiresRootCauseAnalysis(question)) {
     return {
@@ -223,7 +214,7 @@ function createAnalysisPlan(question) {
       MEASURES.shippingcost,
       MEASURES.materialcost,
     ],
-    dimensions: [],
+    dimensions: [DIMENSIONS.productcategory],
     timeDimensions: [
       {
         dimension: DIMENSIONS.date,
@@ -242,20 +233,51 @@ function createAnalysisPlan(question) {
     limit: 1000,
   };
 
-  return {
-    type: "root_cause_analysis",
-    queries: [
+  const comparisonQuery = {
+    measures: [
+      MEASURES.revenue,
+      MEASURES.profit,
+      MEASURES.margin,
+    ],
+    dimensions: [DIMENSIONS.region],
+    timeDimensions: [
       {
-        step: 1,
-        purpose: "Analyze margin trend",
-        cubeQuery: primaryQuery,
-      },
-      {
-        step: 2,
-        purpose: "Break down shipping and material costs",
-        cubeQuery: secondaryQuery,
+        dimension: DIMENSIONS.date,
+        granularity: "quarter",
       },
     ],
+    filters: [],
+    limit: 1000,
+  };
+
+  const queries = [
+    {
+      step: 1,
+      purpose: "Analyze the primary business metric trend",
+      cubeQuery: primaryQuery,
+    },
+    {
+      step: 2,
+      purpose: "Investigate shipping and material cost drivers",
+      cubeQuery: secondaryQuery,
+    },
+  ];
+
+  if (
+    normalized.includes("compare") ||
+    normalized.includes("region") ||
+    normalized.includes("regional")
+  ) {
+    queries.push({
+      step: 3,
+      purpose: "Compare regional business performance",
+      cubeQuery: comparisonQuery,
+    });
+  }
+
+  return {
+    type: "root_cause_analysis",
+    queries,
   };
 }
 
