@@ -77,7 +77,50 @@ function createSemanticRequest(query) {
     query,
   };
 }
+/**
+ * Cube.dev API configuration.
+ */
+const CUBE_API_URL =
+  process.env.CUBE_API_URL || "http://localhost:4000/cubejs-api/v1/load";
 
+const CUBE_API_SECRET =
+  process.env.CUBEJS_API_SECRET || "metricmind-development-secret";
+
+/**
+ * Build the Cube.dev API request URL.
+ */
+function buildCubeApiUrl(query) {
+  validateCubeQuery(query);
+
+  const params = new URLSearchParams({
+    query: JSON.stringify(query),
+  });
+
+  return `${CUBE_API_URL}?${params.toString()}`;
+}
+
+/**
+ * Execute a governed query against Cube.dev.
+ */
+async function executeCubeQuery(query) {
+  const requestUrl = buildCubeApiUrl(query);
+
+  const response = await fetch(requestUrl, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${CUBE_API_SECRET}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Cube API request failed with status ${response.status}`
+    );
+  }
+
+  return response.json();
+}
 module.exports = {
   SEMANTIC_LAYER,
   SALES_CUBE,
@@ -87,4 +130,6 @@ module.exports = {
   isSupportedCube,
   validateCubeQuery,
   createSemanticRequest,
+  buildCubeApiUrl,
+  executeCubeQuery,
 };
