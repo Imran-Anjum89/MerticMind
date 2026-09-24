@@ -54,3 +54,83 @@ const PRESETS = [
   }
 ];
 
+export default function PresetPrompts({ onSelectPrompt, disabled }) {
+  return (
+    <div style={{ marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+        <HelpCircle size={14} color="var(--accent-cyan)" />
+        <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+          Quick Analysis Presets
+        </span>
+        <span style={{ fontSize: '11px', color: 'var(--text-dim)', marginLeft: '4px' }}>— click to execute governed query</span>
+      </div>
+
+      <div style={{
+        display:               'grid',
+        gridTemplateColumns:   'repeat(auto-fill, minmax(270px, 1fr))',
+        gap:                   '10px'
+      }}>
+        {PRESETS.map((p, idx) => {
+          const Icon = p.icon;
+          return (
+            <button
+              key={idx}
+              id={`preset-${idx}`}
+              onClick={() => onSelectPrompt(p.query)}
+              disabled={disabled}
+              className="glass-panel"
+              style={{
+                padding:    '14px 16px',
+                textAlign:  'left',
+                cursor:     disabled ? 'not-allowed' : 'pointer',
+                opacity:    disabled ? 0.55 : 1,
+                display:    'flex',
+                flexDirection: 'column',
+                gap:        '8px',
+                background: 'rgba(14, 22, 40, 0.65)',
+                border:     '1px solid rgba(255, 255, 255, 0.07)',
+                transition: 'all 0.22s ease'
+              }}
+              onMouseEnter={e => {
+                if (!disabled) {
+                  e.currentTarget.style.borderColor = p.color + '55';
+                  e.currentTarget.style.background   = 'rgba(24, 36, 66, 0.85)';
+                  e.currentTarget.style.transform    = 'translateY(-2px)';
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.07)';
+                e.currentTarget.style.background   = 'rgba(14, 22, 40, 0.65)';
+                e.currentTarget.style.transform    = 'translateY(0)';
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width:      '28px', height: '28px', borderRadius: '8px',
+                  background: `${p.color}18`,
+                  border:     `1px solid ${p.color}30`,
+                  display:    'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Icon size={14} color={p.color} />
+                </div>
+                <span className={`badge ${p.badge}`} style={{ fontSize: '10.5px' }}>{p.label}</span>
+              </div>
+
+              <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-main)', lineHeight: 1.35 }}>
+                {p.query}
+              </p>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <p style={{ fontSize: '11px', color: 'var(--text-dim)', lineHeight: 1.4, flex: 1 }}>
+                  {p.desc}
+                </p>
+                <ArrowRight size={13} color={p.color} style={{ flexShrink: 0, marginLeft: '8px' }} />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
