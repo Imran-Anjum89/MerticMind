@@ -1,0 +1,13 @@
+{
+  "name": "metricmind",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MetricMind Governed Conversational BI Engine",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend run start",
+    "backend": "npm --prefix backend start",
+    "test:semantic": "npm --prefix backend run test:semantic"
+  }
+}
