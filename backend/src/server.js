@@ -135,3 +135,4 @@ server.listen(PORT, () => {
     `MetricMind backend running on http://localhost:${PORT}`
   );
 });
+// API endpoint for governed natural-language business analysis.
