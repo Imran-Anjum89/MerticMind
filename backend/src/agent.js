@@ -475,3 +475,5 @@ module.exports = {
   validateGovernedQuery,
 };
 // Governed agent configuration maintained for MetricMind analytical queries.
+
+// Governed query validation keeps analytical requests within the approved semantic model.
