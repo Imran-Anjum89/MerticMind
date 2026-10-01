@@ -37,3 +37,5 @@ db.serialize(() => {
 });
 
 db.close();
+
+// Loads MetricMind business datasets into the local DuckDB warehouse.
