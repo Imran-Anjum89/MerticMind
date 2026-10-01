@@ -474,3 +474,4 @@ module.exports = {
   detectMeasures,
   validateGovernedQuery,
 };
+// Governed agent configuration maintained for MetricMind analytical queries.
