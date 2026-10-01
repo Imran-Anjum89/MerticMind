@@ -160,6 +160,86 @@ export default function TransparencyModal({ isOpen, onClose, transparencyData })
               )}
             </div>
           )}
+
+          {/* ── Governed SQL ─────────────────────────────────────────────── */}
+          {activeTab === 'sql' && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
+                <Info size={13} color="var(--accent-emerald)" />
+                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                  The Semantic Layer compiles the JSON payload into deterministic, governed SQL. Row-limited to 1,000 max.
+                </p>
+              </div>
+              <pre className="mono" style={{
+                background:   '#04070e',
+                padding:      '16px',
+                borderRadius: '10px',
+                fontSize:     '12.5px',
+                color:        '#4ade80',
+                whiteSpace:   'pre-wrap',
+                wordBreak:    'break-word',
+                border:       '1px solid rgba(74,222,128,0.12)',
+                lineHeight:   1.65
+              }}>
+                {transparencyData?.executedSql || 'No SQL recorded for this query.'}
+              </pre>
+
+              {transparencyData?.secondaryQueries?.length > 0 && (
+                <div style={{ marginTop: '16px' }}>
+                  <h4 style={{ fontSize: '12px', color: 'var(--text-main)', fontWeight: '600', marginBottom: '10px' }}>
+                    Secondary Queries SQL:
+                  </h4>
+                  {transparencyData.secondaryQueries.map((sq, idx) => (
+                    <div key={idx} style={{ marginBottom: '12px' }}>
+                      <span className="badge badge-emerald" style={{ marginBottom: '6px', fontSize: '10.5px' }}>{sq.name}</span>
+                      <pre className="mono" style={{
+                        background: '#04070e', padding: '12px', borderRadius: '8px',
+                        fontSize: '12px', color: '#94a3b8', border: '1px solid rgba(148,163,184,0.08)', lineHeight: 1.55
+                      }}>
+                        {sq.sql}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Semantic Schema ─────────────────────────────────────────── */}
+          {activeTab === 'schema' && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
+                <Info size={13} color="var(--accent-cyan)" />
+                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                  The governed semantic schema available to the AI agent.
+                </p>
+              </div>
+              <pre className="mono" style={{
+                background: '#04070e', padding: '16px', borderRadius: '10px', fontSize: '12.5px',
+                color: '#67e8f9', overflowX: 'auto', border: '1px solid rgba(103,232,249,0.12)', lineHeight: 1.6
+              }}>
+                {schemaData ? JSON.stringify(schemaData, null, 2) : 'Loading semantic schema...'}
+              </pre>
+            </div>
+          )}
+
+          {/* ── Query Cost ──────────────────────────────────────────────── */}
+          {activeTab === 'cost' && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
+                <Info size={13} color="var(--accent-amber)" />
+                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                  Estimated warehouse cost and query execution details.
+                </p>
+              </div>
+              <pre className="mono" style={{
+                background: '#04070e', padding: '16px', borderRadius: '10px', fontSize: '12.5px',
+                color: '#fbbf24', overflowX: 'auto', border: '1px solid rgba(251,191,36,0.12)', lineHeight: 1.6
+              }}>
+                {JSON.stringify(costEst || {}, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
       </div>
     </div>
