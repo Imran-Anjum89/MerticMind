@@ -13,3 +13,6 @@ frontend/out/
 # Logs and local tooling
 *.log
 .DS_Store
+cube/.cubestore/
+cube/metricmind.duckdb
+
