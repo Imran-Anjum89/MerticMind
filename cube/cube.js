@@ -8,3 +8,4 @@ module.exports = {
   schemaPath: "model/cubes",
   apiSecret: process.env.CUBEJS_API_SECRET || "metricmind-development-secret",
 };
+// Cube configuration exposes the governed Sales semantic model.
