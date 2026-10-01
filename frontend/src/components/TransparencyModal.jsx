@@ -205,39 +205,85 @@ export default function TransparencyModal({ isOpen, onClose, transparencyData })
             </div>
           )}
 
-          {/* ── Semantic Schema ─────────────────────────────────────────── */}
+          {/* ── Semantic Schema ───────────────────────────────────────────── */}
           {activeTab === 'schema' && (
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
-                <Info size={13} color="var(--accent-cyan)" />
-                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
-                  The governed semantic schema available to the AI agent.
-                </p>
+              <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                All metrics defined centrally in <code style={{ color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>cube/model/cubes/Sales.js</code>. The AI agent <strong style={{ color: 'var(--text-main)' }}>cannot override these calculations</strong>.
+              </p>
+
+              {schemaData?.governanceRules && (
+                <div style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.18)', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px' }}>
+                  <h4 style={{ fontSize: '11px', color: 'var(--accent-emerald)', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    🔒 Governance Rules
+                  </h4>
+                  {schemaData.governanceRules.map((rule, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '8px', fontSize: '12px', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <CheckCircle2 size={12} color="var(--accent-emerald)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                      <span>{rule}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <h4 style={{ fontSize: '12px', color: 'var(--accent-cyan)', marginBottom: '10px', fontWeight: '700' }}>
+                    Governed Measures
+                  </h4>
+                  {schemaData?.measures?.map((m, idx) => (
+                    <div key={idx} style={{ background: 'rgba(0,0,0,0.25)', padding: '8px 12px', borderRadius: '7px', marginBottom: '6px', fontSize: '12px' }}>
+                      <strong style={{ color: '#e2e8f0', display: 'block', marginBottom: '2px' }}>{m.name}</strong>
+                      <code style={{ color: '#64748b', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>{m.sql}</code>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '12px', color: 'var(--accent-emerald)', marginBottom: '10px', fontWeight: '700' }}>
+                    Governed Dimensions
+                  </h4>
+                  {schemaData?.dimensions?.map((d, idx) => (
+                    <div key={idx} style={{ background: 'rgba(0,0,0,0.25)', padding: '8px 12px', borderRadius: '7px', marginBottom: '6px', fontSize: '12px' }}>
+                      <strong style={{ color: '#e2e8f0', display: 'block', marginBottom: '2px' }}>{d.name}</strong>
+                      <code style={{ color: '#64748b', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>{d.sql}</code>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <pre className="mono" style={{
-                background: '#04070e', padding: '16px', borderRadius: '10px', fontSize: '12.5px',
-                color: '#67e8f9', overflowX: 'auto', border: '1px solid rgba(103,232,249,0.12)', lineHeight: 1.6
-              }}>
-                {schemaData ? JSON.stringify(schemaData, null, 2) : 'Loading semantic schema...'}
-              </pre>
             </div>
           )}
 
-          {/* ── Query Cost ──────────────────────────────────────────────── */}
+          {/* ── Query Cost Estimate ───────────────────────────────────────── */}
           {activeTab === 'cost' && (
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '16px' }}>
                 <Info size={13} color="var(--accent-amber)" />
                 <p style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
-                  Estimated warehouse cost and query execution details.
+                  MetricMind estimates the governance cost of each query — row limits enforced, expensive queries warned.
                 </p>
               </div>
-              <pre className="mono" style={{
-                background: '#04070e', padding: '16px', borderRadius: '10px', fontSize: '12.5px',
-                color: '#fbbf24', overflowX: 'auto', border: '1px solid rgba(251,191,36,0.12)', lineHeight: 1.6
-              }}>
-                {JSON.stringify(costEst || {}, null, 2)}
-              </pre>
+
+              {costEst ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+                  {[
+                    { label: 'Rows Returned',    value: costEst.rowsReturned,   badge: 'badge-cyan' },
+                    { label: 'Row Limit Cap',     value: costEst.rowLimit,       badge: 'badge-emerald' },
+                    { label: 'Dimensions',        value: costEst.dimensionCount, badge: 'badge-indigo' },
+                    { label: 'Measures',          value: costEst.measureCount,   badge: 'badge-violet' },
+                    { label: 'Filters Applied',   value: costEst.filterCount,    badge: 'badge-amber' },
+                    { label: 'Complexity Rating', value: costEst.complexityRating, badge: costEst.complexityRating === 'Low' ? 'badge-emerald' : 'badge-amber' }
+                  ].map((item, idx) => (
+                    <div key={idx} style={{ background: 'rgba(0,0,0,0.28)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '14px' }}>
+                      <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{item.label}</p>
+                      <span className={`badge ${item.badge}`} style={{ fontSize: '13px', padding: '4px 12px' }}>
+                        {item.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: 'var(--text-dim)', fontSize: '13px' }}>No cost estimate available for this query.</p>
+              )}
             </div>
           )}
         </div>
