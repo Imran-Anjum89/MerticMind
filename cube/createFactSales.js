@@ -52,3 +52,5 @@ db.run(sql, (err) => {
         }
     );
 });
+
+// Builds the governed fact_sales warehouse table for Cube analytics.
