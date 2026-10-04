@@ -1,11 +1,12 @@
-/**
- * MetricMind - Cube Configuration
- *
- * Configures the Cube.dev semantic layer entry point.
- */
-
 module.exports = {
-  schemaPath: "model/cubes",
-  apiSecret: process.env.CUBEJS_API_SECRET || "metricmind-development-secret",
+  dbType: process.env.SNOWFLAKE_ACCOUNT ? 'snowflake' : 'duckdb',
+  schemaPath: 'model',
+  
+  queryRewrite: (query, { securityContext }) => {
+    // Governed query enforcement: max row limit safety
+    if (!query.limit || query.limit > 1000) {
+      query.limit = 1000;
+    }
+    return query;
+  }
 };
-// Cube configuration exposes the governed Sales semantic model.
