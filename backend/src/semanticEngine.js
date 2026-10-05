@@ -1,135 +1,462 @@
-/**
- * MetricMind - Semantic Engine
- *
- * Provides the governed semantic-layer foundation
- * used by the MetricMind analytical agent.
- *
- * Raw SQL is not generated here.
- */
+const fs = require('fs');
+const path = require('path');
+const sqlite3 = require('sqlite3').verbose();
 
-const SEMANTIC_LAYER = "Cube.dev";
+// Initialize in-memory Snowflake-compatible database engine (Dual-Mode: works offline)
+const db = new sqlite3.Database(':memory:');
 
-const SALES_CUBE = "Sales";
-// Governed business measures
-const MEASURES = Object.freeze({
-  revenue: "Sales.revenue",
-  cost: "Sales.cost",
-  profit: "Sales.profit",
-  margin: "Sales.margin",
-  shippingCost: "Sales.shippingCost",
-  materialCost: "Sales.materialCost",
-});
+// ─────────────────────────────────────────────────────────────────────────────
+// Database helpers
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Governed business dimensions
-const DIMENSIONS = Object.freeze({
-  region: "Sales.region",
-  country: "Sales.country",
-  productCategory: "Sales.productCategory",
-  date: "Sales.date",
-});
+function runSql(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+      if (err) reject(err);
+      else resolve(this);
+    });
+  });
+}
 
-/**
- * Governed semantic-layer configuration.
- */
-const semanticModel = {
-  semanticLayer: SEMANTIC_LAYER,
-  cube: SALES_CUBE,
+function querySql(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+}
+
+// Parse CSV file safely
+function parseCsv(filePath) {
+  const content = fs.readFileSync(filePath, 'utf8');
+  const lines = content.trim().split(/\r?\n/);
+  const headers = lines[0].split(',').map(h => h.trim());
+  const rows = lines.slice(1).map(line => {
+    const values = line.split(',').map(v => v.trim());
+    const rowObj = {};
+    headers.forEach((h, idx) => {
+      rowObj[h] = values[idx];
+    });
+    return rowObj;
+  });
+  return { headers, rows };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Warehouse initialization: Seed mock data & run dbt-equivalent transformations
+// ─────────────────────────────────────────────────────────────────────────────
+
+let _warehouseReady = false;
+
+async function initWarehouse() {
+  if (_warehouseReady) return;
+
+  // Resolve data directory robustly for both direct Node and Next.js server contexts.
+  // Next.js server bundles change __dirname to .next/server/app — we walk upward to find data/.\
+  function findDataDir() {
+    // Candidate paths to try in order
+    const candidates = [
+      // 0. Explicitly configured via next.config.js env (most reliable in Next.js context)
+      process.env.METRICMIND_DATA_DIR,
+      // 1. Direct backend execution: backend/src → ../../data
+      path.join(__dirname, '../../data'),
+      // 2. Next.js bundles from project root
+      path.join(process.cwd(), 'data'),
+      path.join(process.cwd(), '../data'),
+      path.join(process.cwd(), '../../data'),
+      // 3. Walk up from __dirname
+      path.join(__dirname, '../../../data'),
+      path.join(__dirname, '../../../../data'),
+    ].filter(Boolean);
+
+    // Add INIT_CWD path if set (set during npm run dev)
+    if (process.env.INIT_CWD) {
+      candidates.unshift(path.join(process.env.INIT_CWD, '../data'));
+      candidates.unshift(path.join(process.env.INIT_CWD, 'data'));
+    }
+
+    for (const dir of candidates) {
+      try {
+        if (fs.existsSync(path.join(dir, 'regions.csv'))) {
+          console.log(`[MetricMind] Data directory resolved: ${dir}`);
+          return dir;
+        }
+      } catch (_) { /* skip */ }
+    }
+    throw new Error(`Cannot locate data directory with regions.csv. Tried: ${candidates.join(', ')}`);
+  }
+
+  const dataDir = findDataDir();
+
+  // 1. Raw Regions
+  await runSql(`CREATE TABLE IF NOT EXISTS raw_regions (region_id TEXT, region_name TEXT, currency TEXT)`);
+  const regData = parseCsv(path.join(dataDir, 'regions.csv'));
+  for (const r of regData.rows) {
+    await runSql(`INSERT INTO raw_regions VALUES (?, ?, ?)`, [r.region_id, r.region_name, r.currency]);
+  }
+
+  // 2. Raw Products
+  await runSql(`CREATE TABLE IF NOT EXISTS raw_products (product_id TEXT, product_name TEXT, category TEXT, base_price REAL, unit_cost REAL)`);
+  const prodData = parseCsv(path.join(dataDir, 'products.csv'));
+  for (const p of prodData.rows) {
+    await runSql(`INSERT INTO raw_products VALUES (?, ?, ?, ?, ?)`, [p.product_id, p.product_name, p.category, parseFloat(p.base_price), parseFloat(p.unit_cost)]);
+  }
+
+  // 3. Raw Customers
+  await runSql(`CREATE TABLE IF NOT EXISTS raw_customers (customer_id TEXT, customer_name TEXT, segment TEXT, region_id TEXT, country TEXT)`);
+  const custData = parseCsv(path.join(dataDir, 'customers.csv'));
+  for (const c of custData.rows) {
+    await runSql(`INSERT INTO raw_customers VALUES (?, ?, ?, ?, ?)`, [c.customer_id, c.customer_name, c.segment, c.region_id, c.country]);
+  }
+
+  // 4. Raw Orders
+  await runSql(`CREATE TABLE IF NOT EXISTS raw_orders (order_id TEXT, order_date TEXT, customer_id TEXT, product_id TEXT, region_id TEXT, quantity INTEGER, unit_price REAL, discount_amount REAL)`);
+  const ordData = parseCsv(path.join(dataDir, 'orders.csv'));
+  for (const o of ordData.rows) {
+    await runSql(`INSERT INTO raw_orders VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [o.order_id, o.order_date, o.customer_id, o.product_id, o.region_id, parseInt(o.quantity), parseFloat(o.unit_price), parseFloat(o.discount_amount)]);
+  }
+
+  // 5. Raw Shipping Costs
+  await runSql(`CREATE TABLE IF NOT EXISTS raw_shipping_costs (shipping_id TEXT, order_id TEXT, region_id TEXT, quarter TEXT, shipping_carrier TEXT, shipping_fee REAL, fuel_surcharge REAL)`);
+  const shipData = parseCsv(path.join(dataDir, 'shipping_costs.csv'));
+  for (const s of shipData.rows) {
+    await runSql(`INSERT INTO raw_shipping_costs VALUES (?, ?, ?, ?, ?, ?, ?)`, [s.shipping_id, s.order_id, s.region_id, s.quarter, s.shipping_carrier, parseFloat(s.shipping_fee), parseFloat(s.fuel_surcharge)]);
+  }
+
+  // 6. Raw Material Costs
+  await runSql(`CREATE TABLE IF NOT EXISTS raw_material_costs (material_id TEXT, product_id TEXT, region_id TEXT, quarter TEXT, material_fee REAL, tariff_surcharge REAL)`);
+  const matData = parseCsv(path.join(dataDir, 'material_costs.csv'));
+  for (const m of matData.rows) {
+    await runSql(`INSERT INTO raw_material_costs VALUES (?, ?, ?, ?, ?, ?)`, [m.material_id, m.product_id, m.region_id, m.quarter, parseFloat(m.material_fee), parseFloat(m.tariff_surcharge)]);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // dbt-equivalent transformation views
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // Staging: stg_customers (segment normalization)
+  await runSql(`
+    CREATE VIEW stg_customers AS
+    SELECT
+      customer_id,
+      TRIM(customer_name) AS customer_name,
+      CASE
+        WHEN LOWER(segment) IN ('enterprise', 'large enterprise') THEN 'Enterprise'
+        WHEN LOWER(segment) IN ('smb', 'small business', 'mid-market') THEN 'SMB'
+        WHEN LOWER(segment) IN ('consumer', 'b2c', 'individual') THEN 'Consumer'
+        ELSE COALESCE(segment, 'Unknown')
+      END AS customer_segment,
+      region_id,
+      UPPER(TRIM(country)) AS country,
+      CASE WHEN LOWER(segment) IN ('enterprise', 'large enterprise') THEN 1 ELSE 0 END AS is_enterprise
+    FROM raw_customers
+    WHERE customer_id IS NOT NULL
+  `);
+
+  // Staging: stg_shipping_costs (enriched totals)
+  await runSql(`
+    CREATE VIEW stg_shipping_costs AS
+    SELECT
+      shipping_id, order_id, region_id, quarter, shipping_carrier,
+      shipping_fee, fuel_surcharge,
+      (shipping_fee + fuel_surcharge) AS total_shipping_cost,
+      CASE WHEN (shipping_fee + fuel_surcharge) > 500 THEN 1 ELSE 0 END AS is_high_cost_shipping,
+      CASE
+        WHEN shipping_carrier LIKE '%Euro%'    THEN 'European Carrier'
+        WHEN shipping_carrier LIKE '%Pacific%' THEN 'Asia Pacific Carrier'
+        WHEN shipping_carrier LIKE '%Express%' THEN 'Express Carrier'
+        ELSE 'Standard Carrier'
+      END AS carrier_type
+    FROM raw_shipping_costs
+    WHERE shipping_id IS NOT NULL
+  `);
+
+  // Staging: stg_material_costs (enriched totals + tariff ratio)
+  await runSql(`
+    CREATE VIEW stg_material_costs AS
+    SELECT
+      material_id, product_id, region_id, quarter,
+      material_fee, tariff_surcharge,
+      (material_fee + tariff_surcharge) AS total_material_cost,
+      CASE WHEN material_fee > 0
+        THEN ROUND(tariff_surcharge / material_fee * 100.0, 2) ELSE 0.0
+      END AS tariff_ratio_pct,
+      CASE WHEN tariff_surcharge > 200 THEN 1 ELSE 0 END AS is_high_tariff
+    FROM raw_material_costs
+    WHERE material_id IS NOT NULL
+  `);
+
+  // Transformed: dim_regions
+  await runSql(`
+    CREATE VIEW dim_regions AS
+    SELECT
+      region_id, region_name AS region, currency,
+      CASE region_name
+        WHEN 'Europe'        THEN 'EMEA'
+        WHEN 'North America' THEN 'Americas'
+        WHEN 'India'         THEN 'APAC'
+        WHEN 'Japan'         THEN 'APAC'
+        ELSE 'Other'
+      END AS continent_group,
+      CASE WHEN currency = 'EUR' THEN 1 ELSE 0 END AS is_euro_region
+    FROM raw_regions WHERE region_id IS NOT NULL
+  `);
+
+  // Transformed: dim_products
+  await runSql(`
+    CREATE VIEW dim_products AS
+    SELECT
+      product_id, product_name, category AS product_category,
+      base_price, unit_cost,
+      ROUND((base_price - unit_cost) / base_price * 100.0, 2) AS unit_margin_pct,
+      CASE
+        WHEN ((base_price - unit_cost) / base_price * 100.0) >= 50 THEN 'High Margin'
+        WHEN ((base_price - unit_cost) / base_price * 100.0) >= 25 THEN 'Mid Margin'
+        ELSE 'Low Margin'
+      END AS margin_tier
+    FROM raw_products WHERE product_id IS NOT NULL
+  `);
+
+  // Transformed: dim_customers (with region join)
+  await runSql(`
+    CREATE VIEW dim_customers AS
+    SELECT
+      c.customer_id, c.customer_name, c.customer_segment, c.country,
+      c.region_id, r.region_name AS region, c.is_enterprise,
+      CASE c.customer_segment
+        WHEN 'Enterprise' THEN 1
+        WHEN 'SMB'        THEN 2
+        ELSE 3
+      END AS segment_tier
+    FROM stg_customers c
+    LEFT JOIN raw_regions r ON c.region_id = r.region_id
+  `);
+
+  // Transformed: fact_sales (primary analytical model — mirrors dbt model)
+  await runSql(`
+    CREATE VIEW fact_sales AS
+    SELECT
+      o.order_id,
+      o.order_date,
+      strftime('%Y-Q', o.order_date) || CAST(((CAST(strftime('%m', o.order_date) AS INTEGER) - 1) / 3 + 1) AS TEXT) AS order_quarter,
+      CAST(strftime('%Y', o.order_date) AS INTEGER) AS order_year,
+      o.customer_id,
+      c.customer_name,
+      c.customer_segment,
+      c.country,
+      c.is_enterprise,
+      o.product_id,
+      p.product_name,
+      p.category AS product_category,
+      p.base_price,
+      p.unit_cost AS product_unit_cost,
+      o.region_id,
+      r.region,
+      r.currency,
+      r.continent_group,
+      o.quantity,
+      o.unit_price,
+      o.discount_amount,
+      (o.quantity * o.unit_price - o.discount_amount)                       AS revenue,
+      COALESCE(s.total_shipping_cost, o.quantity * 15.0)                    AS shipping_cost,
+      COALESCE(m.total_material_cost, o.quantity * p.unit_cost)             AS material_cost,
+      (COALESCE(s.total_shipping_cost, o.quantity * 15.0)
+       + COALESCE(m.total_material_cost, o.quantity * p.unit_cost))         AS total_cost,
+      ((o.quantity * o.unit_price - o.discount_amount)
+       - COALESCE(s.total_shipping_cost, o.quantity * 15.0)
+       - COALESCE(m.total_material_cost, o.quantity * p.unit_cost))         AS profit,
+      CASE
+        WHEN (o.quantity * o.unit_price - o.discount_amount) > 0 THEN
+          ROUND(
+            ((o.quantity * o.unit_price - o.discount_amount)
+             - COALESCE(s.total_shipping_cost, o.quantity * 15.0)
+             - COALESCE(m.total_material_cost, o.quantity * p.unit_cost))
+            / (o.quantity * o.unit_price - o.discount_amount) * 100.0,
+            2
+          )
+        ELSE 0.0
+      END AS margin_pct,
+      COALESCE(s.is_high_cost_shipping, 0)    AS is_high_cost_shipping,
+      COALESCE(s.carrier_type, 'Standard Carrier') AS carrier_type,
+      COALESCE(m.is_high_tariff, 0)           AS is_high_tariff,
+      COALESCE(m.tariff_ratio_pct, 0.0)       AS tariff_ratio_pct
+    FROM raw_orders o
+    JOIN raw_products p             ON o.product_id  = p.product_id
+    JOIN stg_customers c            ON o.customer_id = c.customer_id
+    JOIN dim_regions r              ON o.region_id   = r.region_id
+    LEFT JOIN stg_shipping_costs s  ON o.order_id    = s.order_id
+    LEFT JOIN stg_material_costs m  ON o.product_id  = m.product_id
+                                    AND o.region_id  = m.region_id
+  `);
+
+  _warehouseReady = true;
+  console.log('[MetricMind] ✅ Warehouse initialized — dbt views materialized in SQLite');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Governed Cube.dev Schema Dictionary
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MEASURE_MAP = {
+  'Sales.revenue':      { expr: 'SUM(revenue)',                                                                    alias: 'revenue',      title: 'Total Revenue',       format: '$' },
+  'Sales.cost':         { expr: 'SUM(total_cost)',                                                                 alias: 'cost',         title: 'Total Cost',          format: '$' },
+  'Sales.shippingCost': { expr: 'SUM(shipping_cost)',                                                              alias: 'shippingCost', title: 'Shipping Cost',        format: '$' },
+  'Sales.materialCost': { expr: 'SUM(material_cost)',                                                              alias: 'materialCost', title: 'Material Cost',        format: '$' },
+  'Sales.profit':       { expr: 'SUM(profit)',                                                                     alias: 'profit',       title: 'Net Profit',           format: '$' },
+  'Sales.margin':       { expr: 'CASE WHEN SUM(revenue) > 0 THEN ROUND((SUM(profit) / SUM(revenue)) * 100.0, 2) ELSE 0 END', alias: 'margin', title: 'Margin %', format: '%' },
+  'Sales.count':        { expr: 'COUNT(order_id)',                                                                 alias: 'count',        title: 'Order Count',          format: '#' },
+  'Sales.quantity':     { expr: 'SUM(quantity)',                                                                   alias: 'quantity',     title: 'Total Quantity',       format: '#' },
 };
 
-function getSemanticModel() {
-  return semanticModel;
-}
+const DIMENSION_MAP = {
+  'Sales.region':          { expr: 'region',           alias: 'region',          title: 'Region' },
+  'Sales.country':         { expr: 'country',          alias: 'country',         title: 'Country' },
+  'Sales.productCategory': { expr: 'product_category', alias: 'productCategory', title: 'Product Category' },
+  'Sales.productName':     { expr: 'product_name',     alias: 'productName',     title: 'Product Name' },
+  'Sales.customerSegment': { expr: 'customer_segment', alias: 'customerSegment', title: 'Customer Segment' },
+  'Sales.continentGroup':  { expr: 'continent_group',  alias: 'continentGroup',  title: 'Continent Group' },
+  'Sales.carrierType':     { expr: 'carrier_type',     alias: 'carrierType',     title: 'Carrier Type' },
+  'Sales.date':            { expr: 'order_date',       alias: 'date',            title: 'Order Date' },
+};
 
-function isSupportedCube(cubeName) {
-  return cubeName === SALES_CUBE;
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Governed Query Execution Engine
+// Accepts ONLY Cube.dev JSON payloads — direct SQL is rejected
+// ─────────────────────────────────────────────────────────────────────────────
 
-function validateCubeQuery(query) {
-  if (!query || typeof query !== "object") {
-    throw new Error("Cube query must be a valid object.");
+async function executeCubeQuery(cubeQuery) {
+  // GOVERNANCE RULE 1: Reject raw SQL input
+  if (typeof cubeQuery === 'string' || cubeQuery.sql) {
+    throw new Error('GOVERNANCE ERROR: Direct SQL execution is blocked. MetricMind requires governed Cube.dev JSON API queries.');
   }
 
-  if (!Array.isArray(query.measures)) {
-    throw new Error("Cube query must contain measures.");
+  const measures       = cubeQuery.measures       || [];
+  const dimensions     = cubeQuery.dimensions     || [];
+  const timeDimensions = cubeQuery.timeDimensions || [];
+  const filters        = cubeQuery.filters        || [];
+
+  // GOVERNANCE RULE 2: Row limit cap
+  const limit = Math.min(cubeQuery.limit || 500, 1000);
+
+  const selectFields  = [];
+  const groupByFields = [];
+
+  // Resolve dimensions
+  dimensions.forEach(dimKey => {
+    const dimDef = DIMENSION_MAP[dimKey];
+    if (!dimDef) throw new Error(`GOVERNANCE ERROR: Dimension '${dimKey}' not defined in governed Cube schema.`);
+    selectFields.push(`${dimDef.expr} AS "${dimDef.alias}"`);
+    groupByFields.push(dimDef.expr);
+  });
+
+  // Resolve time dimensions
+  timeDimensions.forEach(td => {
+    const dimDef = DIMENSION_MAP[td.dimension];
+    if (!dimDef) throw new Error(`GOVERNANCE ERROR: Time dimension '${td.dimension}' not defined in governed Cube schema.`);
+
+    if (td.granularity === 'quarter') {
+      const expr = `strftime('%Y-Q', order_date) || CAST(((CAST(strftime('%m', order_date) AS INTEGER) - 1) / 3 + 1) AS TEXT)`;
+      selectFields.push(`${expr} AS "quarter"`);
+      groupByFields.push(expr);
+    } else if (td.granularity === 'month') {
+      const expr = `strftime('%Y-%m', order_date)`;
+      selectFields.push(`${expr} AS "month"`);
+      groupByFields.push(expr);
+    } else if (td.granularity === 'year') {
+      const expr = `strftime('%Y', order_date)`;
+      selectFields.push(`${expr} AS "year"`);
+      groupByFields.push(expr);
+    } else {
+      selectFields.push(`${dimDef.expr} AS "${dimDef.alias}"`);
+      groupByFields.push(dimDef.expr);
+    }
+  });
+
+  // Resolve measures
+  measures.forEach(mKey => {
+    const mDef = MEASURE_MAP[mKey];
+    if (!mDef) throw new Error(`GOVERNANCE ERROR: Measure '${mKey}' not defined in governed Cube schema.`);
+    selectFields.push(`${mDef.expr} AS "${mDef.alias}"`);
+  });
+
+  if (selectFields.length === 0) {
+    throw new Error('GOVERNANCE ERROR: Query must specify at least one measure or dimension.');
   }
 
-  if (!Array.isArray(query.dimensions)) {
-    throw new Error("Cube query must contain dimensions.");
-  }
+  // Build governed WHERE clause
+  const whereClauses = [];
+  const params       = [];
 
-  if (!Array.isArray(query.timeDimensions)) {
-    throw new Error("Cube query must contain timeDimensions.");
-  }
+  filters.forEach(f => {
+    const dimDef = DIMENSION_MAP[f.member];
+    if (!dimDef) return;
 
-  if (!Array.isArray(query.filters)) {
-    throw new Error("Cube query must contain filters.");
-  }
+    if (f.operator === 'equals' && Array.isArray(f.values) && f.values.length > 0) {
+      const placeholders = f.values.map(() => '?').join(', ');
+      whereClauses.push(`${dimDef.expr} IN (${placeholders})`);
+      params.push(...f.values);
+    } else if (f.operator === 'notEquals' && Array.isArray(f.values) && f.values.length > 0) {
+      const placeholders = f.values.map(() => '?').join(', ');
+      whereClauses.push(`${dimDef.expr} NOT IN (${placeholders})`);
+      params.push(...f.values);
+    }
+  });
 
-  return true;
-}
+  // Assemble governed SQL
+  let sql = `SELECT ${selectFields.join(', ')} FROM fact_sales`;
+  if (whereClauses.length > 0) sql += ` WHERE ${whereClauses.join(' AND ')}`;
+  if (groupByFields.length > 0) sql += ` GROUP BY ${groupByFields.join(', ')}`;
+  if (dimensions.length > 0 || timeDimensions.length > 0) sql += ` ORDER BY 1 ASC`;
+  sql += ` LIMIT ${limit}`;
 
-function createSemanticRequest(query) {
-  validateCubeQuery(query);
+  const data = await querySql(sql, params);
+
+  // Estimate query cost (GOVERNANCE RULE 3: Cost transparency)
+  const costEstimate = {
+    rowsReturned:   data.length,
+    rowLimit:       limit,
+    dimensionCount: dimensions.length + timeDimensions.length,
+    measureCount:   measures.length,
+    filterCount:    filters.length,
+    complexityRating: dimensions.length + measures.length > 4 ? 'Medium' : 'Low'
+  };
 
   return {
-    semanticLayer: SEMANTIC_LAYER,
-    cube: SALES_CUBE,
-    query,
+    data,
+    executedSql: sql,
+    cubeQuery,
+    costEstimate
   };
 }
-/**
- * Cube.dev API configuration.
- */
-const CUBE_API_URL =
-  process.env.CUBE_API_URL || "http://localhost:4000/cubejs-api/v1/load";
 
-const CUBE_API_SECRET =
-  process.env.CUBEJS_API_SECRET || "metricmind-development-secret";
+// ─────────────────────────────────────────────────────────────────────────────
+// Health check for /api/health route
+// ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Build the Cube.dev API request URL.
- */
-function buildCubeApiUrl(query) {
-  validateCubeQuery(query);
-
-  const params = new URLSearchParams({
-    query: JSON.stringify(query),
-  });
-
-  return `${CUBE_API_URL}?${params.toString()}`;
-}
-
-/**
- * Execute a governed query against Cube.dev.
- */
-async function executeCubeQuery(query) {
-  const requestUrl = buildCubeApiUrl(query);
-
-  const response = await fetch(requestUrl, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${CUBE_API_SECRET}`,
-      Accept: "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `Cube API request failed with status ${response.status}`
+async function getWarehouseHealth() {
+  try {
+    const tableCount = await querySql(
+      `SELECT COUNT(*) as cnt FROM sqlite_master WHERE type IN ('table', 'view')`
     );
+    const orderCount = await querySql(`SELECT COUNT(*) as cnt FROM fact_sales`);
+    return {
+      status: 'healthy',
+      engine: 'SQLite (Dual-Mode: Snowflake-compatible)',
+      tablesAndViews: tableCount[0].cnt,
+      factSalesRows: orderCount[0].cnt,
+      dbtModels: ['stg_customers', 'stg_shipping_costs', 'stg_material_costs', 'dim_regions', 'dim_products', 'dim_customers', 'fact_sales'],
+      initialized: _warehouseReady
+    };
+  } catch (err) {
+    return { status: 'unhealthy', error: err.message, initialized: false };
   }
-
-  return response.json();
 }
+
 module.exports = {
-  SEMANTIC_LAYER,
-  SALES_CUBE,
-  MEASURES,
-  DIMENSIONS,
-  getSemanticModel,
-  isSupportedCube,
-  validateCubeQuery,
-  createSemanticRequest,
-  buildCubeApiUrl,
+  initWarehouse,
   executeCubeQuery,
+  getWarehouseHealth,
+  MEASURE_MAP,
+  DIMENSION_MAP
 };
