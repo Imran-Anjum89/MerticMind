@@ -1,138 +1,99 @@
-/**
- * MetricMind - Backend API
- *
- * Connects the conversational agent with the
- * governed semantic engine.
- */
+const http = require('http');
+const { initWarehouse, getCubeSchema, getWarehouseHealth } = require('./semanticEngine');
+const { processUserQuestion } = require('./agent');
 
-const http = require("http");
+const PORT = process.env.PORT || 5000;
 
-const { runAgent } = require("./agent");
-const {
-  executeCubeQuery,
-} = require("./semanticEngine");
+async function startServer() {
+  // Initialize SQLite warehouse and dbt views
+  console.log('[MetricMind Backend] Initializing warehouse & dbt models...');
+  await initWarehouse();
+  console.log('[MetricMind Backend] ✅ Warehouse ready.');
 
-const PORT = process.env.PORT || 3001;
+  const server = http.createServer(async (req, res) => {
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-function sendJson(response, statusCode, data) {
-  response.writeHead(statusCode, {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  });
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
 
-  response.end(JSON.stringify(data));
-}
+    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const pathname = url.pathname;
 
-function readRequestBody(request) {
-  return new Promise((resolve, reject) => {
-    let body = "";
-
-    request.on("data", (chunk) => {
-      body += chunk;
-    });
-
-    request.on("end", () => {
+    // GET /health or /api/health
+    if (req.method === 'GET' && (pathname === '/health' || pathname === '/api/health')) {
       try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (error) {
-        reject(new Error("Request body must contain valid JSON."));
+        const health = await getWarehouseHealth();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(health, null, 2));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'error', error: err.message }));
       }
-    });
+      return;
+    }
 
-    request.on("error", reject);
-  });
-}
+    // GET /schema or /api/schema
+    if (req.method === 'GET' && (pathname === '/schema' || pathname === '/api/schema')) {
+      try {
+        const schema = getCubeSchema();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(schema, null, 2));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+      return;
+    }
 
-async function handleAgentRequest(request, response) {
-  try {
-    const body = await readRequestBody(request);
-    const question = body.question;
+    // POST /agent or /api/agent
+    if (req.method === 'POST' && (pathname === '/agent' || pathname === '/api/agent')) {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const parsed = JSON.parse(body || '{}');
+          const question = parsed.question?.trim() || 'Why did European margins drop last quarter?';
+          console.log(`[MetricMind Backend] Processing query: "${question}"`);
 
-    if (!question || typeof question !== "string") {
-      return sendJson(response, 400, {
-        error: "A natural-language business question is required.",
+          const result = await processUserQuestion(question);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result));
+        } catch (err) {
+          const isGov = err.message && err.message.includes('GOVERNANCE');
+          res.writeHead(isGov ? 403 : 500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: err.message || 'Error processing agent query',
+            scenario: 'ERROR'
+          }));
+        }
       });
+      return;
     }
 
-    const agentResult = await runAgent(question);
+    // 404
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Endpoint not found', available: ['/health', '/schema', '/agent'] }));
+  });
 
-    const queryResults = [];
-
-    for (const plannedQuery of agentResult.analysisPlan.queries) {
-      const cubeQuery = plannedQuery.cubeQuery;
-
-      try {
-        const result = await executeCubeQuery(cubeQuery);
-
-        queryResults.push({
-          step: plannedQuery.step,
-          purpose: plannedQuery.purpose,
-          cubeQuery,
-          result,
-        });
-      } catch (error) {
-        queryResults.push({
-          step: plannedQuery.step,
-          purpose: plannedQuery.purpose,
-          cubeQuery,
-          error: error.message,
-        });
-      }
-    }
-
-    return sendJson(response, 200, {
-      question: agentResult.question,
-      governed: agentResult.governed,
-      rawSqlGenerated: agentResult.rawSqlGenerated,
-      semanticLayer: agentResult.semanticLayer,
-      analysisPlan: agentResult.analysisPlan,
-      queryResults,
-    });
-  } catch (error) {
-    return sendJson(response, 500, {
-      error: error.message,
-    });
-  }
+  server.listen(PORT, () => {
+    console.log(`╔══════════════════════════════════════════════════════════╗`);
+    console.log(`║  MetricMind Backend API Server                          ║`);
+    console.log(`║  Running on: http://localhost:${PORT}                      ║`);
+    console.log(`║  Endpoints:                                              ║`);
+    console.log(`║    - GET  http://localhost:${PORT}/health                  ║`);
+    console.log(`║    - GET  http://localhost:${PORT}/schema                  ║`);
+    console.log(`║    - POST http://localhost:${PORT}/agent                   ║`);
+    console.log(`╚══════════════════════════════════════════════════════════╝`);
+  });
 }
 
-const server = http.createServer(async (request, response) => {
-  if (request.method === "OPTIONS") {
-    response.writeHead(204, {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    });
-
-    return response.end();
-  }
-
-  if (
-    request.method === "POST" &&
-    request.url === "/api/agent"
-  ) {
-    return handleAgentRequest(request, response);
-  }
-
-  if (
-    request.method === "GET" &&
-    request.url === "/health"
-  ) {
-    return sendJson(response, 200, {
-      status: "ok",
-      service: "MetricMind Backend",
-    });
-  }
-
-  return sendJson(response, 404, {
-    error: "Route not found.",
-  });
+startServer().catch(err => {
+  console.error('[MetricMind Backend] Failed to start:', err);
+  process.exit(1);
 });
-
-server.listen(PORT, () => {
-  console.log(
-    `MetricMind backend running on http://localhost:${PORT}`
-  );
-});
-// API endpoint for governed natural-language business analysis.
