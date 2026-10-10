@@ -9,5 +9,14 @@
     "start": "npm --prefix frontend run start",
     "backend": "npm --prefix backend start",
     "test:semantic": "npm --prefix backend run test:semantic"
+  },
+  "dependencies": {
+    "echarts": "^5.5.0",
+    "echarts-for-react": "^3.0.2",
+    "lucide-react": "^0.359.0",
+    "next": "^14.2.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sqlite3": "^6.0.1"
   }
 }
