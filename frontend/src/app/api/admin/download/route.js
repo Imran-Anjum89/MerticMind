@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const { findDataDir } = require('../../../../../../backend/src/semanticEngine');
+const { findDataDir } = require('../../../../lib/engine');
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {

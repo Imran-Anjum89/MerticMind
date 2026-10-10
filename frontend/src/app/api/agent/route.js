@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const { initWarehouse } = require('../../../../../backend/src/semanticEngine');
-const { processUserQuestion } = require('../../../../../backend/src/agent');
+const { initWarehouse, processUserQuestion } = require('../../../lib/engine');
 
 let warehouseInitialized = false;
 

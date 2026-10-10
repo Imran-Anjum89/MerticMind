@@ -1,7 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['sqlite3']
+    serverComponentsExternalPackages: ['sqlite3'],
+    outputFileTracingIncludes: {
+      '/api/**/*': [
+        './data/**/*',
+        './backend/**/*',
+        '../data/**/*',
+        '../backend/**/*'
+      ]
+    }
   },
   webpack: (config, { isServer }) => {
     if (isServer) {

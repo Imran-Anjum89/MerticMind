@@ -7,7 +7,7 @@ const {
   getWarehouseHealth,
   getWarehouseStats,
   findDataDir
-} = require('../../../../../../backend/src/semanticEngine');
+} = require('../../../../lib/engine');
 
 const DESCRIPTIONS = {
   'orders.csv': 'Core transactional facts (Order ID, Date, Customer, Product, Quantity, Revenue)',

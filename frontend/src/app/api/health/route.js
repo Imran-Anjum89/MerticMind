@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const { initWarehouse, getWarehouseHealth } = require('../../../../../backend/src/semanticEngine');
+const { initWarehouse, getWarehouseHealth } = require('../../../lib/engine');
 
 export async function GET() {
   try {

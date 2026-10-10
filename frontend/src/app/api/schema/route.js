@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const { MEASURE_MAP, DIMENSION_MAP } = require('../../../../../backend/src/semanticEngine');
+const { MEASURE_MAP, DIMENSION_MAP } = require('../../../lib/engine');
 
 export async function GET() {
   return NextResponse.json({

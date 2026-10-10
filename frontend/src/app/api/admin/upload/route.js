@@ -7,7 +7,7 @@ const {
   getWarehouseHealth,
   getWarehouseStats,
   findDataDir
-} = require('../../../../../../backend/src/semanticEngine');
+} = require('../../../../lib/engine');
 
 export async function POST(request) {
   try {
