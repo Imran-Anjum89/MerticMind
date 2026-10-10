@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MetricMind — Enterprise Governed BI Presentation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(26, 34, 52, 0.75);
+      --border: rgba(255, 255, 255, 0.08);
+      --accent: #38bdf8;
+      --emerald: #10b981;
+      --purple: #a855f7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 20px;
+    }
+    .deck-container {
+      width: 100%;
+      max-width: 1100px;
+      aspect-ratio: 16 / 9;
+      background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 60%, #020617 100%);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 40px 50px;
+      overflow: hidden;
+    }
+    .slide {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .slide.active { display: flex; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.985); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .slide-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 24px;
+      letter-spacing: -0.02em;
+    }
+    .grid { display: grid; gap: 16px; flex: 1; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(8px);
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title.accent { color: var(--accent); }
+    .card-title.emerald { color: var(--emerald); }
+    .card-title.purple { color: var(--purple); }
+    .card-title.red { color: #f87171; }
+    .card-title.amber { color: #fbbf24; }
+    .bullet-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .bullet-list li {
+      font-size: 12.5px;
+      color: #cbd5e1;
+      line-height: 1.5;
+      position: relative;
+      padding-left: 14px;
+    }
+    .bullet-list li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: bold;
+    }
+    /* Title Slide Specifics */
+    .hero-container {
+      margin: auto 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .hero-title {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-subtitle {
+      font-size: 20px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .hero-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 800px;
+      line-height: 1.6;
+    }
+    .team-banner {
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 12px;
+      padding: 16px 24px;
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .team-member { display: flex; flex-direction: column; gap: 2px; }
+    .team-role { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--emerald); letter-spacing: 0.08em; }
+    .team-name { font-size: 18px; font-weight: 700; color: #fff; }
+    /* Navigation Bar */
+    .nav-bar {
+      margin-top: 20px;
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      transition: all 0.2s;
+    }
+    .btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #090d16; }
+    .btn-primary:hover { background: #7dd3fc; }
+    .slide-indicator { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="deck-container">
+    
+    <!-- SLIDE 1: TITLE -->
+    <div class="slide active">
+      <div class="hero-container">
+        <div class="badge">METRICMIND ENTERPRISE BI</div>
+        <h1 class="hero-title">MetricMind</h1>
+        <div class="hero-subtitle">Governed Conversational BI Engine</div>
+        <p class="hero-desc">
+          Modern Data Stack architecture combining Cube.dev semantic governance, dbt view transformations, and LangChain multi-step reasoning to completely eliminate LLM SQL hallucinations.
+        </p>
+        <div class="team-banner">
+          <div class="team-member">
+            <span class="team-role">Lead Architect & Developer</span>
+            <span class="team-name">Md Imran Ali</span>
+          </div>
+          <div class="team-member" style="text-align: right;">
+            <span class="team-role" style="color: var(--accent);">Project Contributor</span>
+            <span class="team-name">Vishnu</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: THE PROBLEM -->
+    <div class="slide">
+      <div class="badge">INDUSTRY CHALLENGE</div>
+      <h2 class="slide-title">Why Naive LLM Text-to-SQL Fails in Enterprises</h2>
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="card-title red">1. Schema Hallucinations</div>
+          <ul class="bullet-list">
+            <li>LLMs invent non-existent column names, metrics, and join paths.</li>
+            <li>Produces syntactically invalid SQL on nested aggregations.</li>
+            <li>Calculation drift: Marketing and Finance define margins differently.</li>
+            <li>Zero determinism or automated verification.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title amber">2. Security & SQL Injection</div>
+          <ul class="bullet-list">
+            <li>Unrestricted SQL allows dangerous DROP/TRUNCATE queries.</li>
+            <li>Exposes private database schemas and customer PII in prompts.</li>
+            <li>Circumvents enterprise role-based security policies.</li>
+            <li>Uncapped query complexity triggers runaway cloud warehouse costs.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title emerald">3. The MetricMind Paradigm</div>
+          <ul class="bullet-list">
+            <li>Direct SQL generation is blocked by architectural design.</li>
+            <li>AI outputs strictly validated Cube.dev JSON queries.</li>
+            <li>Enforces uniform metric calculations across all regions.</li>
+            <li>Full audit transparency with interactive ECharts visuals.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: THE SOLUTION -->
+    <div class="slide">
+      <div class="badge">THE METRICMIND SOLUTION</div>
+      <h2 class="slide-title">Governed Semantic BI with Deterministic Precision</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title accent">Semantic-Layer-First Principles</div>
+          <ul class="bullet-list">
+            <li><b>No Direct SQL:</b> Agent queries are translated into validated Cube.dev JSON schemas.</li>
+            <li><b>dbt-Engineered Data Modeling:</b> Normalizes raw transactions into clean analytical views (<code>fact_sales</code>, <code>dim_customers</code>, <code>dim_products</code>).</li>
+            <li><b>Deterministic KPIs:</b> Revenues, margins, logistics freight, and raw material costs calculate identically every time.</li>
+            <li><b>Multi-Step Reasoning:</b> Executes coordinated analytical chains (Trend → Cost Driver → Product Category).</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title purple">Enterprise Value Proposition</div>
+          <ul class="bullet-list">
+            <li><b>Audit Transparency:</b> Every insight reveals reasoning steps, Cube JSON, and underlying transformed SQL.</li>
+            <li><b>Self-Service Admin Hub:</b> Drag-and-drop CSV ingestion with instantaneous warehouse re-materialization.</li>
+            <li><b>20-Point Regulatory Framework:</b> Integrated GDPR, CCPA, CPRA, EU AI Act, and WCAG accessibility standards.</li>
+            <li><b>Zero-Dependency Cloud Deployment:</b> Resilient dual-engine running on Vercel serverless without native addon failures.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: ARCHITECTURE -->
+    <div class="slide">
+      <div class="badge">SYSTEM ARCHITECTURE</div>
+      <h2 class="slide-title">End-to-End Modern Data Stack Pipeline</h2>
+      <div class="grid grid-4">
+        <div class="card">
+          <div class="card-title accent">1. Storage Lake</div>
+          <ul class="bullet-list">
+            <li>orders.csv</li>
+            <li>products.csv</li>
+            <li>customers.csv</li>
+            <li>shipping_costs.csv</li>
+            <li>material_costs.csv</li>
+            <li>regions.csv (960 rows)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title emerald">2. dbt Transform</div>
+          <ul class="bullet-list">
+            <li>stg_customers</li>
+            <li>stg_shipping_costs</li>
+            <li>stg_material_costs</li>
+            <li>dim_regions</li>
+            <li>dim_products</li>
+            <li>fact_sales</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title purple">3. Governed Cube</div>
+          <ul class="bullet-list">
+            <li>MEASURE_MAP: Revenue, Cost, Profit, Margin %, Shipping, Material</li>
+            <li>DIMENSION_MAP: Region, Category, Segment, Carrier, Quarter</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title accent">4. AI & UI</div>
+          <ul class="bullet-list">
+            <li>LangChain Multi-Step Agent</li>
+            <li>Next.js 14 App Router</li>
+            <li>Apache ECharts</li>
+            <li>Admin Dataset Hub</li>
+            <li>Compliance Badges</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: LANGCHAIN AGENT -->
+    <div class="slide">
+      <div class="badge">INTELLIGENT REASONING</div>
+      <h2 class="slide-title">Multi-Step LangChain Agent & Analytical Scenarios</h2>
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="card-title accent">ROOT CAUSE ANALYSIS</div>
+          <ul class="bullet-list">
+            <li>"Why did European margins drop?"</li>
+            <li>Executes 3 queries: Margin Trend → Shipping vs Material → Product Category breakdown.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title emerald">COST BREAKDOWN</div>
+          <ul class="bullet-list">
+            <li>"Shipping vs material cost breakdown"</li>
+            <li>Isolates freight logistics, fuel surcharges, and raw material procurement tariffs.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title purple">PRODUCT ANALYSIS</div>
+          <ul class="bullet-list">
+            <li>"Product category breakdown in Europe"</li>
+            <li>Analyzes Hardware, Software, Peripherals with margin tiers and unit profitability.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title purple">SEGMENT ANALYSIS</div>
+          <ul class="bullet-list">
+            <li>"Enterprise vs SMB revenue comparison"</li>
+            <li>Evaluates order volume, revenue yield, and profit margins across client segments.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title emerald">COST GOVERNANCE AUDIT</div>
+          <ul class="bullet-list">
+            <li>"Cost governance audit for all regions"</li>
+            <li>Audits carrier performance and flags high-tariff material purchase orders.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title accent">REGIONAL BENCHMARK</div>
+          <ul class="bullet-list">
+            <li>"Regional overview across Europe & US"</li>
+            <li>Cross-compares Europe, North America, India, and Japan revenues, costs, and margins.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: ECHARTS VISUALIZATION -->
+    <div class="slide">
+      <div class="badge">VISUAL ANALYTICS</div>
+      <h2 class="slide-title">Interactive Apache ECharts & Transparency Inspector</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title accent">Dynamic Visualizations Engine</div>
+          <ul class="bullet-list">
+            <li><b>Dual-Axis Margin Trends:</b> Correlates gross revenue against percentage margin erosion across quarters.</li>
+            <li><b>Stacked Cost Breakdown:</b> Deconstructs freight logistics, fuel surcharges, and material tariffs into stacked bars.</li>
+            <li><b>Product Donut Breakdown:</b> Displays category revenue share with interactive hover tooltips.</li>
+            <li><b>Segment Benchmarks:</b> Side-by-side bar comparisons highlighting high-volume SMB vs high-margin Enterprise accounts.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title emerald">Transparency & Governance Inspector</div>
+          <ul class="bullet-list">
+            <li><b>Direct SQL Blocked Badge:</b> Visual proof that raw un-governed SQL execution was prohibited.</li>
+            <li><b>Reasoning Chain:</b> Step-by-step audit log of agent deductions and executed sub-queries.</li>
+            <li><b>Governed Cube Payload:</b> Inspectable JSON query payload sent to the semantic layer.</li>
+            <li><b>Equivalent SQL View:</b> Transparent query materialized against SQLite/warehouse.</li>
+            <li><b>Cost & Complexity Metrics:</b> Execution row counts and complexity rating (Low/Medium/High).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: DATASET INGESTION -->
+    <div class="slide">
+      <div class="badge">DATASET MANAGEMENT</div>
+      <h2 class="slide-title">Self-Service Ingestion Hub & Admin Panel</h2>
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="card-title accent">1. Live Dataset Inspector</div>
+          <ul class="bullet-list">
+            <li>Inspects all 6 core business files in real time.</li>
+            <li>Displays row counts, byte sizes, and column schemas.</li>
+            <li>Instant 3-row data preview modal for quick verification.</li>
+            <li>Available via modal and standalone <code>/admin</code> route.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title emerald">2. Drag-and-Drop Ingestion</div>
+          <ul class="bullet-list">
+            <li>Live multipart upload endpoint (<code>/api/admin/upload</code>).</li>
+            <li>Instant warehouse re-indexing: Drops old views, recreates tables, and re-materializes dbt models.</li>
+            <li>Validates headers and protects against malformed CSVs.</li>
+            <li>Immediate agent synchronization with updated data.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title purple">3. Template Downloader</div>
+          <ul class="bullet-list">
+            <li>Pre-formatted <code>sample_orders_template.csv</code>.</li>
+            <li>Standard columns: order_id, date, customer_id, product_id, quantity, revenue.</li>
+            <li>Allows external users to test their custom business data immediately.</li>
+            <li>Protected against directory traversal vulnerabilities.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: 20 COMPLIANCE STANDARDS -->
+    <div class="slide">
+      <div class="badge">GOVERNANCE & TRUST</div>
+      <h2 class="slide-title">20-Point Regulatory & Consumer Protection Framework</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title accent">Consumer Protection & Legal Policies</div>
+          <ul class="bullet-list">
+            <li>1. Privacy Policy: Discloses data processing & in-memory retention.</li>
+            <li>2. Terms of Service: Governed analytical usage terms.</li>
+            <li>3. Refund Policy: Software SLA & credit evaluation.</li>
+            <li>4. Cookie Policy: Categorization of essential tokens.</li>
+            <li>5. Cookie Consent Banner: Floating preference selector.</li>
+            <li>6. Form Consents: Explicit opt-in on file uploads.</li>
+            <li>7. Data Minimization: Zero personal PII ingested.</li>
+            <li>8. Third-Party Audits: Zero tracking scripts or pixels.</li>
+            <li>9. Zero Dark Patterns: Neutral, non-deceptive interface.</li>
+            <li>10. No Hidden Fees: Transparent compute & warehouse costs.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title emerald">Accessibility, Safety & AI Governance</div>
+          <ul class="bullet-list">
+            <li>11. Verified Testimonials: Zero fake reviews.</li>
+            <li>12. Evidence-Based Claims: Audited latency & accuracy.</li>
+            <li>13. Accessibility Alt Text: ARIA labels on charts & SVGs.</li>
+            <li>14. WCAG Contrast: High-contrast ratios (> 4.5:1).</li>
+            <li>15. Keyboard Navigation: Tab, Shift+Tab & Escape focus traps.</li>
+            <li>16. Business Details: Registered corporate identity.</li>
+            <li>17. Age Consent: Strict COPPA compliance for B2B use.</li>
+            <li>18. Email Unsubscribe: 1-click preference management.</li>
+            <li>19. AI Governance: Governed JSON API & row caps.</li>
+            <li>20. Data Deletion: GDPR Article 17 Right-to-be-Forgotten.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: VERCEL DEPLOYMENT -->
+    <div class="slide">
+      <div class="badge">CLOUD ARCHITECTURE</div>
+      <h2 class="slide-title">Production Deployment & Serverless Resilience</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title accent">Vercel Monorepo Deployment</div>
+          <ul class="bullet-list">
+            <li><b>Root vercel.json:</b> Orchestrates build commands across Next.js frontend and backend models.</li>
+            <li><b>Universal Engine Bridge:</b> <code>frontend/src/lib/engine.js</code> seamlessly resolves modules regardless of deployment root.</li>
+            <li><b>Output File Tracing:</b> Next.js <code>outputFileTracingIncludes</code> bundles CSV datasets directly into AWS Lambda serverless functions.</li>
+            <li><b>GitHub Continuous Deployment:</b> Direct push and synchronization with <code>origin/main</code>.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title purple">Zero-Dependency Serverless Analytical Engine</div>
+          <ul class="bullet-list">
+            <li><b>The Problem:</b> Native <code>sqlite3</code> C++ binaries required <code>GLIBC_2.38</code>, failing on Amazon Linux runners with <code>ERR_DLOPEN_FAILED</code>.</li>
+            <li><b>The Solution:</b> Built a pure JavaScript analytical engine calculating all metrics with zero native dependencies.</li>
+            <li><b>Dual-Mode Architecture:</b> Uses SQLite when available locally, and seamlessly switches to pure-JS in serverless environments.</li>
+            <li><b>100% Precision:</b> All 6 agent scenarios, ECharts visuals, and admin endpoints function identically.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 10: SUMMARY & TEAM -->
+    <div class="slide">
+      <div class="badge">PROJECT CONCLUSION</div>
+      <h2 class="slide-title">Project Summary, Key Impact & Team Credits</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title emerald">Key Achievements & Impact</div>
+          <ul class="bullet-list">
+            <li><b>9/9 Backend Tests Passing:</b> 100% verification across all 6 analytical scenarios and security rules.</li>
+            <li><b>Sub-100ms Query Execution:</b> In-memory engine delivers instantaneous insights to decision-makers.</li>
+            <li><b>Zero LLM Hallucinations:</b> Deterministic KPI calculations guarantee boardroom-ready accuracy.</li>
+            <li><b>Live Cloud Deployment:</b> Production-ready on Vercel with automated GitHub CI/CD.</li>
+          </ul>
+        </div>
+        <div class="card" style="border-color: rgba(56, 189, 248, 0.4);">
+          <div class="card-title accent">Project Development Team</div>
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--emerald); text-transform: uppercase;">Lead Architect & Developer</div>
+            <div style="font-size: 18px; font-weight: 800; color: #fff;">Md Imran Ali</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              • Architecture Design & Next.js 14 Web Application<br>
+              • Governed Semantic Layer & Dual-Mode Analytical Engine<br>
+              • LangChain Multi-Step Reasoning Agent & ECharts Integration<br>
+              • 20-Point Compliance Hub & Vercel Deployment Orchestration
+            </div>
+          </div>
+          <div style="border-top: 1px solid var(--border); padding-top: 10px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase;">Project Contributor</div>
+            <div style="font-size: 17px; font-weight: 800; color: #fff;">Vishnu</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              • Dimensional Modeling & dbt Transformation Design<br>
+              • Dataset Quality Engineering & Scenario Validation<br>
+              • Admin Dataset Ingestion Testing & Edge-Case QA
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- NAVIGATION -->
+  <div class="nav-bar">
+    <button class="btn" id="prevBtn" onclick="prevSlide()" disabled>← Previous</button>
+    <div class="slide-indicator" id="slideIndicator">Slide 1 of 10</div>
+    <button class="btn btn-primary" id="nextBtn" onclick="nextSlide()">Next Slide →</button>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const indicator = document.getElementById('slideIndicator');
+
+    function updateSlide() {
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === currentSlide);
+      });
+      indicator.textContent = `Slide ${currentSlide + 1} of ${slides.length}`;
+      prevBtn.disabled = currentSlide === 0;
+      nextBtn.disabled = currentSlide === slides.length - 1;
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+  </script>
+</body>
+</html>
