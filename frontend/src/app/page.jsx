@@ -5,7 +5,11 @@ import Header from '../components/Header';
 import PresetPrompts from '../components/PresetPrompts';
 import ChatBubble from '../components/ChatBubble';
 import TransparencyModal from '../components/TransparencyModal';
-import { Send, Sparkles, Loader2, MessageSquare, Trash2 } from 'lucide-react';
+import AdminPanelModal from '../components/AdminPanelModal';
+import Footer from '../components/Footer';
+import ComplianceModal from '../components/ComplianceModal';
+import CookieConsentBanner from '../components/CookieConsentBanner';
+import { Send, Sparkles, Loader2, MessageSquare, Trash2, Database } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Typing indicator shown while agent is processing
@@ -65,6 +69,9 @@ export default function MetricMindApp() {
   const [chatHistory,     setChatHistory]     = useState([]);  // [{question, response}]
   const [transparencyOpen, setTransparencyOpen] = useState(false);
   const [transparencyData, setTransparencyData] = useState(null);
+  const [adminOpen,        setAdminOpen]        = useState(false);
+  const [complianceOpen,   setComplianceOpen]   = useState(false);
+  const [complianceTab,    setComplianceTab]    = useState('checklist');
 
   const bottomRef    = useRef(null);
   const inputRef     = useRef(null);
@@ -127,7 +134,10 @@ export default function MetricMindApp() {
 
   return (
     <main>
-      <Header />
+      <Header
+        onOpenAdmin={() => setAdminOpen(true)}
+        onOpenCompliance={(tab) => { setComplianceTab(tab || 'checklist'); setComplianceOpen(true); }}
+      />
 
       {/* Quick Analysis Presets */}
       <PresetPrompts onSelectPrompt={handleSelectPrompt} disabled={loading} />
@@ -257,11 +267,39 @@ export default function MetricMindApp() {
         </div>
       </form>
 
+      {/* Site Footer with Architectural Badges & 20 Compliance Standards */}
+      <Footer
+        onOpenCompliance={(tab) => { setComplianceTab(tab || 'checklist'); setComplianceOpen(true); }}
+        onOpenDataDeletion={() => { setComplianceTab('deletion'); setComplianceOpen(true); }}
+        onOpenCookies={() => { setComplianceTab('cookies'); setComplianceOpen(true); }}
+      />
+
       {/* Transparency Inspection Modal */}
       <TransparencyModal
         isOpen={transparencyOpen}
         onClose={() => setTransparencyOpen(false)}
         transparencyData={transparencyData}
+      />
+
+      {/* Admin Panel Data Control Studio Modal */}
+      <AdminPanelModal
+        isOpen={adminOpen}
+        onClose={() => setAdminOpen(false)}
+        onDataUpdated={() => {
+          // If data was updated, prompt user or clear current chat
+        }}
+      />
+
+      {/* 20 Governance & Compliance Standards Modal */}
+      <ComplianceModal
+        isOpen={complianceOpen}
+        onClose={() => setComplianceOpen(false)}
+        initialTab={complianceTab}
+      />
+
+      {/* Cookie Consent Banner (Standard #5) */}
+      <CookieConsentBanner
+        onOpenPolicy={() => { setComplianceTab('cookies'); setComplianceOpen(true); }}
       />
     </main>
   );

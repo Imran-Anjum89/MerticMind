@@ -3,7 +3,7 @@
 import React from 'react';
 import { Database, ShieldCheck, Cpu, Layers, BrainCircuit, GitBranch } from 'lucide-react';
 
-export default function Header() {
+export default function Header({ onOpenAdmin, onOpenCompliance }) {
   return (
     <header
       className="glass-panel"
@@ -60,38 +60,45 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Status Badges */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-        {/* Live health dot */}
-        <div
-          className="badge badge-emerald"
-          style={{ gap: '6px' }}
-          title="Snowflake-compatible SQLite engine running"
-        >
-          <span className="health-dot" />
-          <Database size={12} />
-          Snowflake DW
-        </div>
+      {/* Header Actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        {onOpenCompliance && (
+          <button
+            onClick={() => onOpenCompliance('checklist')}
+            className="btn-icon"
+            style={{
+              padding: '6px 12px',
+              fontSize: '12px',
+              gap: '6px',
+              borderColor: 'rgba(16,185,129,0.3)',
+              color: 'var(--accent-emerald)',
+              background: 'rgba(16,185,129,0.06)'
+            }}
+            title="View 20 Governance & Compliance Standards"
+          >
+            <ShieldCheck size={13} />
+            20 Governance Standards
+          </button>
+        )}
 
-        <div className="badge badge-indigo" title="dbt fact_sales, dim_* models active">
-          <GitBranch size={12} />
-          dbt: fact_sales
-        </div>
-
-        <div className="badge badge-cyan" title="Cube.dev semantic schema governing all queries">
-          <ShieldCheck size={12} />
-          Cube.dev Governed
-        </div>
-
-        <div className="badge badge-violet" title="LangChain agent orchestrating multi-step reasoning">
-          <BrainCircuit size={12} />
-          LangChain Active
-        </div>
-
-        <div className="badge badge-amber" title="Semantic layer: measures & dimensions locked">
-          <Layers size={12} />
-          Semantic Layer
-        </div>
+        {onOpenAdmin && (
+          <button
+            onClick={onOpenAdmin}
+            className="btn-primary"
+            style={{
+              padding: '7px 15px',
+              fontSize: '12px',
+              borderRadius: '9px',
+              background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+              boxShadow: '0 2px 14px rgba(99,102,241,0.4)',
+              cursor: 'pointer'
+            }}
+            title="Open Admin Panel to upload and manage datasets"
+          >
+            <Database size={13} />
+            Admin Panel (Upload Data)
+          </button>
+        )}
       </div>
     </header>
   );

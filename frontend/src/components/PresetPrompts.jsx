@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { HelpCircle, ArrowRight, TrendingDown, Globe, DollarSign, Users, Package, ShieldCheck } from 'lucide-react';
+import { HelpCircle, ArrowRight, TrendingDown, Globe, DollarSign, Users, Package, ShieldCheck, Download } from 'lucide-react';
 
 const PRESETS = [
   {
@@ -57,12 +57,31 @@ const PRESETS = [
 export default function PresetPrompts({ onSelectPrompt, disabled }) {
   return (
     <div style={{ marginBottom: '24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
         <HelpCircle size={14} color="var(--accent-cyan)" />
         <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
           Quick Analysis Presets
         </span>
         <span style={{ fontSize: '11px', color: 'var(--text-dim)', marginLeft: '4px' }}>— click to execute governed query</span>
+
+        <a
+          href="/api/admin/download?file=sample_orders_template.csv"
+          download="sample_orders_template.csv"
+          className="btn-icon"
+          style={{
+            marginLeft: 'auto',
+            fontSize: '11.5px',
+            textDecoration: 'none',
+            padding: '4px 10px',
+            color: 'var(--accent-cyan)',
+            borderColor: 'rgba(6,182,212,0.3)',
+            background: 'rgba(6,182,212,0.08)'
+          }}
+          title="Download ready-to-use sample dataset template to customize and upload"
+        >
+          <Download size={12} />
+          Download Sample Data (.csv)
+        </a>
       </div>
 
       <div style={{

@@ -49,42 +49,51 @@ function parseCsv(filePath) {
 
 let _warehouseReady = false;
 
-async function initWarehouse() {
-  if (_warehouseReady) return;
+function findDataDir() {
+  const candidates = [
+    process.env.METRICMIND_DATA_DIR,
+    path.join(__dirname, '../../data'),
+    path.join(process.cwd(), 'data'),
+    path.join(process.cwd(), '../data'),
+    path.join(process.cwd(), '../../data'),
+    path.join(__dirname, '../../../data'),
+    path.join(__dirname, '../../../../data'),
+  ].filter(Boolean);
 
-  // Resolve data directory robustly for both direct Node and Next.js server contexts.
-  // Next.js server bundles change __dirname to .next/server/app — we walk upward to find data/.\
-  function findDataDir() {
-    // Candidate paths to try in order
-    const candidates = [
-      // 0. Explicitly configured via next.config.js env (most reliable in Next.js context)
-      process.env.METRICMIND_DATA_DIR,
-      // 1. Direct backend execution: backend/src → ../../data
-      path.join(__dirname, '../../data'),
-      // 2. Next.js bundles from project root
-      path.join(process.cwd(), 'data'),
-      path.join(process.cwd(), '../data'),
-      path.join(process.cwd(), '../../data'),
-      // 3. Walk up from __dirname
-      path.join(__dirname, '../../../data'),
-      path.join(__dirname, '../../../../data'),
-    ].filter(Boolean);
+  if (process.env.INIT_CWD) {
+    candidates.unshift(path.join(process.env.INIT_CWD, '../data'));
+    candidates.unshift(path.join(process.env.INIT_CWD, 'data'));
+  }
 
-    // Add INIT_CWD path if set (set during npm run dev)
-    if (process.env.INIT_CWD) {
-      candidates.unshift(path.join(process.env.INIT_CWD, '../data'));
-      candidates.unshift(path.join(process.env.INIT_CWD, 'data'));
-    }
+  for (const dir of candidates) {
+    try {
+      if (fs.existsSync(path.join(dir, 'regions.csv'))) {
+        return dir;
+      }
+    } catch (_) { /* skip */ }
+  }
+  throw new Error(`Cannot locate data directory with regions.csv. Tried: ${candidates.join(', ')}`);
+}
 
-    for (const dir of candidates) {
-      try {
-        if (fs.existsSync(path.join(dir, 'regions.csv'))) {
-          console.log(`[MetricMind] Data directory resolved: ${dir}`);
-          return dir;
-        }
-      } catch (_) { /* skip */ }
-    }
-    throw new Error(`Cannot locate data directory with regions.csv. Tried: ${candidates.join(', ')}`);
+async function initWarehouse(forceReload = false) {
+  if (_warehouseReady && !forceReload) return;
+
+  if (forceReload) {
+    try {
+      await runSql('DROP VIEW IF EXISTS fact_sales');
+      await runSql('DROP VIEW IF EXISTS dim_customers');
+      await runSql('DROP VIEW IF EXISTS dim_products');
+      await runSql('DROP VIEW IF EXISTS dim_regions');
+      await runSql('DROP VIEW IF EXISTS stg_material_costs');
+      await runSql('DROP VIEW IF EXISTS stg_shipping_costs');
+      await runSql('DROP VIEW IF EXISTS stg_customers');
+      await runSql('DROP TABLE IF EXISTS raw_material_costs');
+      await runSql('DROP TABLE IF EXISTS raw_shipping_costs');
+      await runSql('DROP TABLE IF EXISTS raw_orders');
+      await runSql('DROP TABLE IF EXISTS raw_customers');
+      await runSql('DROP TABLE IF EXISTS raw_products');
+      await runSql('DROP TABLE IF EXISTS raw_regions');
+    } catch (_) {}
   }
 
   const dataDir = findDataDir();
@@ -493,10 +502,48 @@ async function getWarehouseHealth() {
   }
 }
 
+async function getWarehouseStats() {
+  await initWarehouse();
+  try {
+    const summary = await querySql(`
+      SELECT
+        COUNT(*) as totalOrders,
+        ROUND(COALESCE(SUM(revenue), 0), 2) as totalRevenue,
+        ROUND(COALESCE(SUM(total_cost), 0), 2) as totalCost,
+        ROUND(COALESCE(SUM(profit), 0), 2) as totalProfit,
+        ROUND(COALESCE(AVG(margin_pct), 0), 2) as avgMargin,
+        COALESCE(MIN(order_date), 'N/A') as minDate,
+        COALESCE(MAX(order_date), 'N/A') as maxDate
+      FROM fact_sales
+    `);
+
+    const regions = await querySql(`
+      SELECT region, COUNT(*) as orders, ROUND(SUM(revenue), 2) as revenue
+      FROM fact_sales GROUP BY region ORDER BY revenue DESC
+    `);
+
+    const categories = await querySql(`
+      SELECT product_category, COUNT(*) as orders, ROUND(SUM(revenue), 2) as revenue
+      FROM fact_sales GROUP BY product_category ORDER BY revenue DESC
+    `);
+
+    return {
+      summary: summary[0] || {},
+      regions,
+      categories
+    };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
 module.exports = {
   initWarehouse,
   executeCubeQuery,
   getWarehouseHealth,
+  getWarehouseStats,
+  findDataDir,
   MEASURE_MAP,
   DIMENSION_MAP
 };
+

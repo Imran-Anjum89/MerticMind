@@ -333,7 +333,7 @@ h1, h2, h3, h4 { letter-spacing: -0.3px; }
   to   { transform: rotate(360deg); }
 }
 
-.animate-spin { animation: spin 1s linear infinite; }
+.animate-spin, .spin { animation: spin 1s linear infinite; }
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Divider
